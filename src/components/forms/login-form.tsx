@@ -2,6 +2,7 @@
 import Loader from '@/app/(public)/loading';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+import AppLoader from '@/components/loader/Loader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,6 +25,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { LoadingModal } from '../loader/LoadingModal';
 
 const formSchema = z.object({
 	username: z.string().min(2, {
@@ -97,7 +99,7 @@ export function LoginForm() {
 					setShowError(true);
 				});
 		} catch (error: unknown) {
-			console.log('error', error);
+			console.log('error in login form', error);
 			if (error instanceof AuthError) {
 				switch (error.type) {
 					case 'CredentialsSignin':
@@ -118,85 +120,82 @@ export function LoginForm() {
 			setLoading(false);
 		}
 	};
-	return loading ? (
-		<Loader />
-	) : (
-		<>
-			<main className="flex flex-col items-center justify-center  p-24">
-				<div className="flex min-h-fit flex-col justify-center space-y-2 ">
-					<h1 className="text-2xl font-extrabold xl:text-3xl">Sign In</h1>
-					<div className="">
-						{showError && (
-							<Alert variant="destructive">
-								<AlertCircle className="size-4" />
-								<AlertTitle>Error</AlertTitle>
-								<AlertDescription>{errorMessage ?? 'Error Message'}</AlertDescription>
-							</Alert>
-						)}
-					</div>
+	return (
+		<main className="flex flex-col items-center justify-center  p-24">
+			<div className="flex min-h-fit flex-col justify-center space-y-2 ">
+				<h1 className="text-2xl font-extrabold xl:text-3xl">Sign In</h1>
+				<div className="">
+					{showError && (
+						<Alert variant="destructive">
+							<AlertCircle className="size-4" />
+							<AlertTitle>Error</AlertTitle>
+							<AlertDescription>{errorMessage ?? 'Error Message'}</AlertDescription>
+						</Alert>
+					)}
+					<LoadingModal isOpen={loading} text="Loading..." />
 				</div>
-				<Form {...form}>
-					<form
-						onSubmit={form.handleSubmit(handleSubmit)}
-						className="mt-10 flex w-full max-w-md flex-col gap-4">
-						<Card className="mx-auto max-w-sm">
-							<CardHeader>
-								<CardTitle className="text-2xl">Login</CardTitle>
-								<CardDescription>Enter your email below to login to your account</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<div className="grid gap-4">
-									<div className="grid gap-2">
-										<FormField
-											control={form.control}
-											name="username"
-											render={({ field }) => {
-												return (
-													<FormItem>
-														<FormLabel>Email address</FormLabel>
-														<FormControl>
-															<Input placeholder="Email address" type="text" {...field} />
-														</FormControl>
-														<FormMessage />
-													</FormItem>
-												);
-											}}
-										/>
-									</div>
-									<div className="grid gap-2">
-										<FormField
-											control={form.control}
-											name="password"
-											render={({ field }) => {
-												return (
-													<FormItem>
-														<div className="flex justify-between">
-															{' '}
-															<FormLabel>Password</FormLabel>
-															<div className="flex items-center">
-																<Link href="#" className="ml-auto inline-block text-sm underline">
-																	Forgot your password?
-																</Link>
-															</div>
-														</div>
-														<FormControl>
-															<Input placeholder="Password" type="password" {...field} />
-														</FormControl>
-														<FormMessage />
-													</FormItem>
-												);
-											}}
-										/>
-									</div>
-									<Button type="submit" className="w-full">
-										Login
-									</Button>
+			</div>
+			<Form {...form}>
+				<form
+					onSubmit={form.handleSubmit(handleSubmit)}
+					className="mt-10 flex w-full max-w-md flex-col gap-4">
+					<Card className="mx-auto max-w-sm">
+						<CardHeader>
+							<CardTitle className="text-2xl">Login</CardTitle>
+							<CardDescription>Enter your email below to login to your account</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="grid gap-4">
+								<div className="grid gap-2">
+									<FormField
+										control={form.control}
+										name="username"
+										render={({ field }) => {
+											return (
+												<FormItem>
+													<FormLabel>Email address</FormLabel>
+													<FormControl>
+														<Input placeholder="Email address" type="text" {...field} />
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											);
+										}}
+									/>
 								</div>
-							</CardContent>
-						</Card>
-					</form>
-				</Form>
-			</main>
-		</>
+								<div className="grid gap-2">
+									<FormField
+										control={form.control}
+										name="password"
+										render={({ field }) => {
+											return (
+												<FormItem>
+													<div className="flex justify-between">
+														{' '}
+														<FormLabel>Password</FormLabel>
+														<div className="flex items-center">
+															<Link href="#" className="ml-auto inline-block text-sm underline">
+																Forgot your password?
+															</Link>
+														</div>
+													</div>
+													<FormControl>
+														<Input placeholder="Password" type="password" {...field} />
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											);
+										}}
+									/>
+								</div>
+								<Button type="submit" className="w-full">
+									Login
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</form>
+			</Form>
+		</main>
 	);
 }

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
-const Loader = ({ className }: { className?: string }) => {
+const AppLoader = ({ className }: { className?: string }) => {
 	return (
 		<>
 			<div className="flex justify-center align-middle items-center">
@@ -14,4 +14,4 @@ const Loader = ({ className }: { className?: string }) => {
 	);
 };
 
-export default Loader;
+export default AppLoader;

@@ -1,17 +1,5 @@
 'use client';
 
-import {
-	AudioWaveform,
-	BookOpen,
-	Bot,
-	Command,
-	Frame,
-	GalleryVerticalEnd,
-	Map,
-	PieChart,
-	Settings2,
-	SquareTerminal,
-} from 'lucide-react';
 import type * as React from 'react';
 
 import { NavMain } from '@/components/dashboard/nav-main';
@@ -25,112 +13,16 @@ import {
 	SidebarHeader,
 	SidebarRail,
 } from '@/components/ui/sidebar';
+import { routes } from '@/data/route';
+import type { Route } from '@/types/route';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { TopSidebar } from './top-sidebar';
-
-// This is sample data.
-const data = {
-	teams: [
-		{
-			name: 'Acme Inc',
-			logo: GalleryVerticalEnd,
-			plan: 'Enterprise',
-		},
-		{
-			name: 'Acme Corp.',
-			logo: AudioWaveform,
-			plan: 'Startup',
-		},
-		{
-			name: 'Evil Corp.',
-			logo: Command,
-			plan: 'Free',
-		},
-	],
-	navMain: [
-		{
-			title: 'Home',
-			url: '#',
-			icon: SquareTerminal,
-			isActive: true,
-			items: [
-				{
-					title: 'Intro',
-					url: '/admin/home/intro',
-				},
-				{
-					title: 'About',
-					url: '/admin/home/about',
-				},
-				{
-					title: 'Experience',
-					url: '/admin/home/experience',
-				},
-				{
-					title: 'Skills',
-					url: '/admin/home/skills',
-				},
-			],
-		},
-		{
-			title: 'Projects',
-			url: '/admin/projects',
-			icon: Bot,
-			items: [
-				{
-					title: 'list',
-					url: '/admin/projects',
-				},
-			],
-		},
-		{
-			title: 'Contact',
-			url: '/admin/contact',
-			icon: BookOpen,
-			items: [
-				{
-					title: 'List',
-					url: '/admin/contact',
-				},
-				{
-					title: 'config',
-					url: '/admin/contact/config',
-				},
-			],
-		},
-		{
-			title: 'Blogs',
-			url: '#',
-			icon: Settings2,
-			items: [
-				{
-					title: 'Blog',
-					url: '/admin/blog',
-				},
-			],
-		},
-	],
-	projects: [
-		{
-			name: 'Design Engineering',
-			url: '#',
-			icon: Frame,
-		},
-		{
-			name: 'Sales & Marketing',
-			url: '#',
-			icon: PieChart,
-		},
-		{
-			name: 'Travel',
-			url: '#',
-			icon: Map,
-		},
-	],
-};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const session = useSession();
+
+	const [showRoutes, setShowRoutes] = useState<Route[]>([]);
 
 	const user = {
 		name: session.data?.user.username ?? '',
@@ -138,14 +30,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		avatar: '/images/profile.jpg',
 	};
 
+	useEffect(() => {
+		const filteredRoutes = routes.filter((route) => {
+			if (route.items) {
+				route.items = route.items.filter((item) => {
+					if (!item.isActive) {
+						return false;
+					}
+					return session.data?.user.permissions.includes(item.permission);
+				});
+			}
+			if (!route.isActive) {
+				return false;
+			}
+
+			if (route.permission) {
+				return session.data?.user.permissions.includes(route.permission);
+			}
+			return false;
+		});
+		setShowRoutes(filteredRoutes);
+	}, [routes, session.data?.user.permissions]);
+
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
 				<TopSidebar />
 			</SidebarHeader>
 			<SidebarContent>
-				<NavMain items={data.navMain} />
-				{/* <NavProjects projects={data.projects} /> */}
+				<NavMain items={showRoutes} />
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={user} />

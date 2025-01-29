@@ -8,8 +8,6 @@ export default function Loader() {
 	const [progress, setProgress] = useState(0);
 	const [isVisible, setIsVisible] = useState(true);
 
-	const [showLoader, setShowLoader] = useState(true);
-
 	const loadTime = 1000;
 
 	const updateProgress = useCallback(() => {

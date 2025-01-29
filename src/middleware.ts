@@ -1,5 +1,5 @@
 import { auth } from 'auth';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import {
 	DEFAULT_LOGIN_REDIRECT,
 	apiAuthPrefix,
@@ -8,7 +8,7 @@ import {
 	publicRoutes,
 } from './routes';
 
-export default auth((req: any) => {
+export default auth((req) => {
 	const isLoggedIn = !!req.auth;
 
 	const { nextUrl } = req;

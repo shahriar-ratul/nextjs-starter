@@ -53,19 +53,6 @@ export default function UserMenu({ user }: Props) {
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
-				<DropdownMenuGroup>
-					<DropdownMenuItem onClick={() => router.push('/all-offers/create')}>
-						<UserIcon className="mr-2 h-4 w-4" />
-						<span>offer request</span>
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-				<DropdownMenuSeparator />
-				<DropdownMenuGroup>
-					<DropdownMenuItem onClick={() => router.push('/all-requests/create')}>
-						<UserIcon className="mr-2 h-4 w-4" />
-						<span>item request</span>
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={handleLogOut}>
 					<LogOut className="mr-2 h-4 w-4" />

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import type { LinkProps } from 'next/link';
-import React, { useState, useId } from 'react';
+import React, { useState, useId, ReactNode } from 'react';
 import { letterAnimation, letterAnimationTwo } from './anim';
 import { AnimatedWord } from './word';
 
@@ -43,7 +43,8 @@ export default function AnimatedLink({ href, children, ...props }: AnimatedLinkP
 			}
 			return element;
 		} else if (Array.isArray(child)) {
-			return child.map((nestedChild, index) => (
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			return child.map((nestedChild: any, index: number) => (
 				<React.Fragment key={`nested-${index}`}>{processChildren(nestedChild)}</React.Fragment>
 			));
 		}

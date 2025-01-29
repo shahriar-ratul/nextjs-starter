@@ -4,6 +4,7 @@ import { SessionProvider } from 'next-auth/react';
 
 import Header from '@/components/dashboard/layout/Header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { redirect } from 'next/navigation';
 
 export default async function RootLayout({
 	children,
@@ -11,6 +12,11 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const session = await auth();
+
+	if (!session?.user) {
+		return redirect('/login');
+	}
+
 	return (
 		<SessionProvider session={session}>
 			<SidebarProvider>

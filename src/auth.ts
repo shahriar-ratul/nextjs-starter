@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type { NextAuthConfig, Session } from 'next-auth';
 import NextAuth, { AuthError } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -43,6 +43,7 @@ declare module 'next-auth' {
 export class CustomAuthError extends AuthError {
 	static type: string;
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	constructor(message?: any) {
 		super();
 		this.type = message;
@@ -105,23 +106,29 @@ export const authConfig = {
 							},
 						);
 
+						// console.log("userResponse", userResponse);
+
 						data = {
 							...data,
 							user: userResponse.data.data,
 						};
 					} catch (err) {
 						console.log(err);
+						const message = 'error in auth';
+						throw new CustomAuthError(message);
 					}
 
 					return data;
-				} catch (error: any) {
+				} catch (error: unknown) {
 					let message = 'An error occurred while logging in. Please try again later.';
 
-					if (error.response.data.message && typeof error.response.data.message === 'string') {
-						message = error.response.data.message;
-					} else {
-						if (typeof error.response.data.message === 'object') {
-							message = error.response.data.message.join('\n');
+					if (error instanceof AxiosError) {
+						if (error?.response?.data.message && typeof error.response.data.message === 'string') {
+							message = error.response.data.message;
+						} else {
+							if (typeof error?.response?.data.message === 'object') {
+								message = error.response.data.message.join('\n');
+							}
 						}
 					}
 
@@ -137,10 +144,12 @@ export const authConfig = {
 			return true;
 		},
 
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		async session({ session, token }: { session: Session; token: any }) {
+			// console.log("session", session, token);
 			if (token) {
 				const user = {
-					...token.user.data,
+					...token.user.item,
 					permissions: token.user.permissions,
 					accessToken: token.accessToken,
 					refreshToken: token.refreshToken,

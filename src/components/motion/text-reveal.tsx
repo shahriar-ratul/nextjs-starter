@@ -26,7 +26,8 @@ const TextReveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({
 			}
 			return element;
 		} else if (Array.isArray(child)) {
-			return child.map((nestedChild, index) => (
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			return child.map((nestedChild: any, index: number) => (
 				<React.Fragment key={`nested-${index}`}>{processChildren(nestedChild)}</React.Fragment>
 			));
 		}

@@ -10,8 +10,11 @@ import '@/styles/globals.css';
 const bricolage_grotesque = Bricolage_Grotesque({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-	title: 'Atik Shahriar Ratul',
-	description: "Atik Shahriar Ratul's Portfolio",
+	title: 'Next js Starter',
+	description: 'Next js Starter',
+	icons: {
+		icon: '/images/logo/logo.png',
+	},
 };
 
 export default async function RootLayout({
