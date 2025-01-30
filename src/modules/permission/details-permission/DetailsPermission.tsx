@@ -9,7 +9,7 @@ import { PermissionModel } from '@/schema/PermissionSchema';
 import { RoleModel } from '@/schema/RoleSchema';
 import axiosInstance from '@/services/axios/axios';
 import { useQuery } from '@tanstack/react-query';
-import { format, parse, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { bn, enUS } from 'date-fns/locale';
 import Image from 'next/image';
@@ -97,12 +97,7 @@ export default function DetailsPermission({ id }: { id: number }) {
 											<p className="text-sm font-medium leading-none">
 												Created At :{' '}
 												{item.createdAt &&
-													formatInTimeZone(
-														parseISO(item.createdAt),
-														'UTC',
-														'MMM dd, yyyy, h:mm:ss a',
-														{ locale: enUS },
-													)}
+													format(parseISO(item.createdAt), 'MMM dd, yyyy, h:mm:ss a')}
 											</p>
 										</div>
 									</div>
@@ -113,12 +108,7 @@ export default function DetailsPermission({ id }: { id: number }) {
 											<p className="text-sm font-medium leading-none">
 												Updated At :{' '}
 												{item.updatedAt &&
-													formatInTimeZone(
-														parseISO(item.updatedAt),
-														'UTC',
-														'MMM dd, yyyy, h:mm:ss a',
-														{ locale: enUS },
-													)}
+													format(parseISO(item.updatedAt), 'MMM dd, yyyy, h:mm:ss a')}
 											</p>
 										</div>
 									</div>

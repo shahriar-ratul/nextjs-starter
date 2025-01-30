@@ -28,12 +28,13 @@ export default function DetailsAdmin({ id }: { id: string }) {
 		queryFn: async () => {
 			const { data } = await fetchData();
 
-			SetItem(data.data as AdminModel);
+			SetItem(data.item as AdminModel);
 
 			return true;
 		},
 	});
 
+	console.log(item);
 	return (
 		<>
 			{isLoading || isFetching ? (
@@ -72,7 +73,7 @@ export default function DetailsAdmin({ id }: { id: string }) {
 										<div className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
 											<span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
 											<div className="space-y-1">
-												<p className="text-sm font-medium leading-none">Phone : {item.mobile}</p>
+												<p className="text-sm font-medium leading-none">Phone : {item.phone}</p>
 											</div>
 										</div>
 										<div className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
@@ -114,7 +115,17 @@ export default function DetailsAdmin({ id }: { id: string }) {
 										<div className="space-y-1">
 											<p className="text-sm font-medium leading-none">
 												Created At :{' '}
-												{item.createdAt && format(item.createdAt, 'dd-MM-yyyy HH:mm a')}
+												{item.createdAt && format(item.createdAt, 'MMM dd, yyyy, h:mm:ss a')}
+											</p>
+										</div>
+									</div>
+
+									<div className="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
+										<span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+										<div className="space-y-1">
+											<p className="text-sm font-medium leading-none">
+												Updated At :{' '}
+												{item.updatedAt && format(item.updatedAt, 'MMM dd, yyyy, h:mm:ss a')}
 											</p>
 										</div>
 									</div>
@@ -143,7 +154,9 @@ export default function DetailsAdmin({ id }: { id: string }) {
 										/>
 									)}
 
-									<p className="mt-2 text-neutral-500 text-[12px] font-medium">{item?.photo}</p>
+									{/* <p className="mt-2 text-neutral-500 text-[12px] font-medium">
+                    {item?.photo}
+                  </p> */}
 								</li>
 							</ul>
 						</CardContent>

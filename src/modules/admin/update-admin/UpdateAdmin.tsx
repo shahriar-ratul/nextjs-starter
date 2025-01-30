@@ -30,7 +30,7 @@ export default function UpdateAdmin({ id }: { id: string }) {
 		queryFn: async () => {
 			const { data } = await fetchData();
 
-			SetItem(data.data as AdminModel);
+			SetItem(data.item as AdminModel);
 
 			return true;
 		},

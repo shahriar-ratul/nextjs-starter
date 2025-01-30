@@ -26,24 +26,15 @@ import {
 } from '@/components/ui/card';
 import { type FileRejection, useDropzone } from 'react-dropzone';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-
 import { toast } from 'sonner';
 
 import Loader from '@/components/loader/Loader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MultiSelect } from '@/components/ui/multi-select';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+
+import { LoadingModal } from '@/components/loader/LoadingModal';
+import { Combobox, ComboboxOptions } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { type AdminModel } from '@/schema/AdminSchema';
 import { type RoleModel } from '@/schema/RoleSchema';
 import axiosInstance from '@/services/axios/axios';
@@ -66,7 +57,7 @@ const formSchema = z.object({
 	lastName: z.string().min(3, { message: 'Last name must be at least 3 characters' }),
 	username: z.string().min(3, { message: 'username must be at least 3 characters' }),
 	email: z.string().email({ message: 'Please enter a valid email' }),
-	mobile: z.string().min(1, { message: 'Please enter a valid phone number' }),
+	phone: z.string().min(1, { message: 'Please enter a valid phone number' }),
 	password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
 	dob: z
 		.date({
@@ -80,6 +71,7 @@ const formSchema = z.object({
 		.optional(),
 	isActive: z.boolean().default(false),
 	roles: z.array(z.string()).min(1, { message: 'At least one role is required' }),
+	gender: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -91,6 +83,7 @@ export const CreateAdminForm = () => {
 	const [roles, setRoles] = useState<RoleModel[]>([]);
 
 	const session = useSession();
+	const [gender, setGender] = useState<string>('');
 
 	// image
 	// image upload
@@ -153,12 +146,13 @@ export const CreateAdminForm = () => {
 		lastName: '',
 		username: '',
 		email: '',
-		mobile: '',
+		phone: '',
 		password: '',
 		dob: undefined,
 		joinedDate: undefined,
 		roles: undefined,
 		isActive: true,
+		gender: undefined,
 	};
 
 	const form = useForm<FormValues>({
@@ -189,7 +183,7 @@ export const CreateAdminForm = () => {
 				lastName,
 				username,
 				email,
-				mobile,
+				phone,
 				password,
 				roles,
 				dob,
@@ -204,11 +198,13 @@ export const CreateAdminForm = () => {
 			formData.append('lastName', lastName);
 			formData.append('username', username);
 			formData.append('email', email);
-			formData.append('mobile', mobile);
+			formData.append('phone', phone);
 			formData.append('password', password);
 			formData.append('roles', JSON.stringify(roles));
-
 			formData.append('isActive', String(isActive));
+			formData.append('createdBy', session.data?.user.id as string);
+			formData.append('updatedBy', session.data?.user.id as string);
+			formData.append('gender', gender);
 
 			if (dob) {
 				formData.append('dob', JSON.stringify(dob));
@@ -274,13 +270,7 @@ export const CreateAdminForm = () => {
 
 	return (
 		<div className="relative w-full">
-			{loading && (
-				<div className="fixed inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center">
-					<div className="bg-background/80 p-10 rounded-lg shadow-lg">
-						<Loader />
-					</div>
-				</div>
-			)}
+			{loading && <LoadingModal isOpen={loading} />}
 
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
@@ -361,20 +351,20 @@ export const CreateAdminForm = () => {
 										</FormItem>
 									)}
 								/>
-								{/* mobile */}
+								{/* phone */}
 								<FormField
 									control={form.control}
-									name="mobile"
+									name="phone"
 									render={({ field }) => (
 										<FormItem>
 											<FormLabel>
-												Mobile &nbsp;
+												Phone &nbsp;
 												<span className="text-destructive dark:text-destructive-foreground">
 													(Please add country code before number)
 												</span>
 											</FormLabel>
 											<FormControl>
-												<Input type="text" disabled={loading} {...field} placeholder="Mobile" />
+												<Input type="text" disabled={loading} {...field} placeholder="Phone" />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -413,39 +403,14 @@ export const CreateAdminForm = () => {
 									render={({ field }) => (
 										<FormItem className="flex flex-col p-2">
 											<FormLabel>Joined Date</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant={'outline'}
-															className={cn(
-																' pl-3 text-left font-normal w-full',
-																!field.value && 'text-muted-foreground',
-															)}>
-															{field.value ? (
-																format(field.value, 'dd-MM-yyyy')
-															) : (
-																<span>Pick a date</span>
-															)}
-															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														captionLayout="dropdown-buttons"
-														selected={field.value}
-														onSelect={field.onChange}
-														fromYear={1960}
-														toYear={2050}
-														// disabled={(date) =>
-														//   date > new Date() || date < new Date("1970-01-01")
-														// }
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
+											<DatePicker
+												placeholder="Joined Date"
+												onChange={field.onChange}
+												value={field.value}
+												startYear={1980}
+												endYear={2030}
+												displayFormat="dd-MM-yyyy"
+											/>
 
 											<FormMessage />
 										</FormItem>
@@ -458,39 +423,14 @@ export const CreateAdminForm = () => {
 									render={({ field }) => (
 										<FormItem className="flex flex-col p-2">
 											<FormLabel>Date of birth</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant={'outline'}
-															className={cn(
-																' pl-3 text-left font-normal w-full',
-																!field.value && 'text-muted-foreground',
-															)}>
-															{field.value ? (
-																format(field.value, 'dd-MM-yyyy')
-															) : (
-																<span>Pick a date</span>
-															)}
-															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														captionLayout="dropdown-buttons"
-														selected={field.value}
-														onSelect={field.onChange}
-														fromYear={1960}
-														toYear={2050}
-														// disabled={(date) =>
-														//   date > new Date() || date < new Date("1970-01-01")
-														// }
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
+											<DatePicker
+												placeholder="Date of birth"
+												onChange={field.onChange}
+												value={field.value}
+												startYear={1980}
+												endYear={2030}
+												displayFormat="dd-MM-yyyy"
+											/>
 
 											<FormMessage />
 										</FormItem>
@@ -516,6 +456,32 @@ export const CreateAdminForm = () => {
 												maxCount={3}
 											/>
 
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="gender"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Gender</FormLabel>
+											<FormControl>
+												<Combobox
+													options={[
+														{ label: 'Male', value: 'male' },
+														{ label: 'Female', value: 'female' },
+													]}
+													placeholder="Select Gender"
+													selected={gender}
+													onChange={(value: ComboboxOptions) => {
+														setGender(value.value);
+														field.onChange(value.value);
+													}}
+													showCreate={false}
+												/>
+											</FormControl>
 											<FormMessage />
 										</FormItem>
 									)}

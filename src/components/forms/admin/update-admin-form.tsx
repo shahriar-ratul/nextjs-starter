@@ -26,28 +26,31 @@ import {
 } from '@/components/ui/card';
 import { type FileRejection, useDropzone } from 'react-dropzone';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-
 import { toast } from 'sonner';
 
 import Loader from '@/components/loader/Loader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { cn } from '@/lib/utils';
+
+import { LoadingModal } from '@/components/loader/LoadingModal';
+import { Combobox, ComboboxOptions } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
+import MultipleSelector, { Option } from '@/components/ui/multi-selector';
 import { type AdminModel } from '@/schema/AdminSchema';
 import { type RoleModel } from '@/schema/RoleSchema';
 import axiosInstance from '@/services/axios/axios';
 import { AxiosError } from 'axios';
+import { formatDate } from 'date-fns';
 import {
 	ArrowUpIcon,
 	CalendarIcon,
+	Check,
 	CheckCircle2Icon,
+	ChevronsUpDown,
 	MessageCircleWarningIcon,
 	X,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import React from 'react';
 
@@ -56,31 +59,59 @@ const formSchema = z.object({
 	lastName: z.string().min(3, { message: 'Last name must be at least 3 characters' }),
 	username: z.string().min(3, { message: 'username must be at least 3 characters' }),
 	email: z.string().email({ message: 'Please enter a valid email' }),
-	mobile: z.string().min(1, { message: 'Please enter a valid phone number' }),
+	phone: z.string().min(1, { message: 'Please enter a valid phone number' }),
 	password: z.string().optional(),
-	dob: z.date({ required_error: 'A date of birth is required.' }).optional(),
-	joinedDate: z.date({ required_error: 'A joined date is required.' }).optional(),
+	dob: z
+		.date({
+			required_error: 'A date of birth is required.',
+		})
+		.optional(),
+	joinedDate: z
+		.date({
+			required_error: 'A date of birth is required.',
+		})
+		.optional(),
 	isActive: z.boolean().default(false),
-	roles: z.array(z.string()).min(1, { message: 'At least one role is required' }),
+	roles: z
+		.array(
+			z.object({
+				value: z.string(),
+				label: z.string(),
+			}),
+		)
+		.min(1, { message: 'At least one role is required' }),
+	gender: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface PropData {
-	item: AdminModel;
-}
-
-export const UpdateAdminForm = ({ item }: PropData) => {
+export const UpdateAdminForm = ({ item }: { item: AdminModel }) => {
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);
 
 	const [roles, setRoles] = useState<RoleModel[]>([]);
+	const [selectedRole, setSelectedRole] = useState<Option[]>([]);
+
+	const session = useSession();
+	const [gender, setGender] = useState<string>('');
+
+	const [joinedDate, setJoinedDate] = useState<Date | undefined>(undefined);
+	const [dob, setDob] = useState<Date | undefined>(undefined);
+
+	// image
+	// image upload
 
 	const [files, setFiles] = useState<(File & { preview: string })[]>([]);
 	const [rejected, setRejected] = useState<FileRejection[]>([]);
 
 	const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
 		if (acceptedFiles?.length) {
+			// setFiles(previousFiles => [
+			//   ...previousFiles,
+			//   ...acceptedFiles.map(file =>
+			//     Object.assign(file, { preview: URL.createObjectURL(file) })
+			//   )
+			// ]);
 			setFiles(
 				acceptedFiles.map((file) => Object.assign(file, { preview: URL.createObjectURL(file) })),
 			);
@@ -102,12 +133,43 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 	});
 
 	useEffect(() => {
+		// Revoke the data uris to avoid memory leaks
 		return () => {
 			for (const file of files) {
 				URL.revokeObjectURL(file.preview);
 			}
 		};
 	}, [files]);
+
+	useEffect(() => {
+		if (item) {
+			// Ensure proper date parsing by explicitly handling the date string
+			const joinedDate = item.joinedDate ? new Date(item.joinedDate) : undefined;
+			const dob = item.dob ? new Date(item.dob) : undefined;
+
+			// Update state values
+			setJoinedDate(joinedDate);
+			setDob(dob);
+
+			const selectedRole = item.roles.map((role) => ({
+				value: role.role.id.toString(),
+				label: role.role.name,
+			}));
+
+			form.setValue('firstName', item.firstName);
+			form.setValue('lastName', item.lastName);
+			form.setValue('username', item.username);
+			form.setValue('email', item.email);
+			form.setValue('phone', item.phone);
+			form.setValue('roles', selectedRole);
+			form.setValue('isActive', item.isActive);
+			form.setValue('gender', item.gender);
+			form.setValue('dob', dob);
+			form.setValue('joinedDate', joinedDate);
+			setGender(item.gender);
+			setSelectedRole(selectedRole);
+		}
+	}, [item]);
 
 	const removeFile = (name: string) => {
 		setFiles((files) => files.filter((file) => file.name !== name));
@@ -123,16 +185,17 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 	};
 
 	const defaultValues = {
-		firstName: item.firstName || '',
-		lastName: item.lastName || '',
-		username: item.username || '',
-		email: item.email || '',
-		mobile: item.mobile || '',
+		firstName: '',
+		lastName: '',
+		username: '',
+		email: '',
+		phone: '',
 		password: '',
-		dob: item.dob ? new Date(item.dob) : undefined,
-		joinedDate: item.joinedDate ? new Date(item.joinedDate) : undefined,
-		roles: item.roles ? item.roles.map((role) => role.role.id.toString()) : [],
-		isActive: item.isActive || false,
+		dob: undefined,
+		joinedDate: undefined,
+		roles: undefined,
+		isActive: true,
+		gender: undefined,
 	};
 
 	const form = useForm<FormValues>({
@@ -163,7 +226,7 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 				lastName,
 				username,
 				email,
-				mobile,
+				phone,
 				password,
 				roles,
 				dob,
@@ -178,13 +241,21 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 			formData.append('lastName', lastName);
 			formData.append('username', username);
 			formData.append('email', email);
-			formData.append('mobile', mobile);
-			formData.append('roles', JSON.stringify(roles));
-			formData.append('isActive', String(isActive));
-
+			formData.append('phone', phone);
 			if (password) {
 				formData.append('password', password);
 			}
+
+			if (roles) {
+				const roleIds = roles.map((role) => role.value);
+
+				formData.append('roles', JSON.stringify(roleIds));
+			}
+
+			formData.append('isActive', String(isActive));
+			formData.append('createdBy', session.data?.user.id as string);
+			formData.append('updatedBy', session.data?.user.id as string);
+			formData.append('gender', gender);
 
 			if (dob) {
 				formData.append('dob', JSON.stringify(dob));
@@ -205,11 +276,13 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 					},
 				})
 				.then((res) => {
-					const message = (res.data.data.message as string) || 'Admin updated successfully';
+					const message = (res.data.data.message as string) || 'Admin created successfully';
 
 					toast(message, {
 						icon: <CheckCircle2Icon className="text-success dark:text-success-foreground" />,
-						style: { color: 'green' },
+						style: {
+							color: 'green',
+						},
 						closeButton: true,
 						duration: 5000,
 						position: 'top-right',
@@ -226,7 +299,9 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 							),
 							closeButton: true,
 							duration: 5000,
-							style: { color: 'red' },
+							style: {
+								color: 'red',
+							},
 							position: 'top-right',
 						});
 					}
@@ -246,20 +321,16 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 
 	return (
 		<div className="relative w-full">
-			{loading && (
-				<div className="fixed inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center">
-					<div className="bg-background/80 p-6 rounded-lg shadow-lg">
-						<Loader />
-					</div>
-				</div>
-			)}
+			{loading && <LoadingModal isOpen={loading} />}
 
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
 					<Card className="w-full">
 						<CardHeader>
 							<CardTitle>Personal Information</CardTitle>
-							<CardDescription>Update your personal information</CardDescription>
+							<CardDescription>
+								Your simple personal information required for identification
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className="md:grid md:grid-cols-2 gap-8">
@@ -299,7 +370,12 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 									name="username"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Username</FormLabel>
+											<FormLabel>
+												Username &nbsp;
+												<span className="text-destructive dark:text-destructive-foreground">
+													( Username must be unique)
+												</span>
+											</FormLabel>
 											<FormControl>
 												<Input disabled={loading} placeholder="Username" {...field} />
 											</FormControl>
@@ -307,14 +383,18 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 										</FormItem>
 									)}
 								/>
-
 								{/* email */}
 								<FormField
 									control={form.control}
 									name="email"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Email</FormLabel>
+											<FormLabel>
+												Email &nbsp;
+												<span className="text-destructive dark:text-destructive-foreground">
+													(Email must be unique)
+												</span>
+											</FormLabel>
 											<FormControl>
 												<Input disabled={loading} placeholder="Email" {...field} type="email" />
 											</FormControl>
@@ -322,16 +402,20 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 										</FormItem>
 									)}
 								/>
-
-								{/* mobile */}
+								{/* phone */}
 								<FormField
 									control={form.control}
-									name="mobile"
+									name="phone"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Mobile</FormLabel>
+											<FormLabel>
+												Phone &nbsp;
+												<span className="text-destructive dark:text-destructive-foreground">
+													(Please add country code before number)
+												</span>
+											</FormLabel>
 											<FormControl>
-												<Input type="text" disabled={loading} {...field} placeholder="Mobile" />
+												<Input type="text" disabled={loading} {...field} placeholder="Phone" />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -345,16 +429,19 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 									render={({ field }) => (
 										<FormItem>
 											<FormLabel>
-												Password
+												Password &nbsp;
 												<span className="text-destructive dark:text-destructive-foreground">
-													(Leave empty to keep current password)
+													(Password at least 6 characters long)
+													<br />
+													(If you don't want to change password, leave it blank)
 												</span>
 											</FormLabel>
+
 											<FormControl>
 												<Input
 													type="password"
 													disabled={loading}
-													placeholder="New Password"
+													placeholder="Password"
 													{...field}
 												/>
 											</FormControl>
@@ -369,36 +456,18 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 									render={({ field }) => (
 										<FormItem className="flex flex-col p-2">
 											<FormLabel>Joined Date</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant={'outline'}
-															className={cn(
-																'pl-3 text-left font-normal w-full',
-																!field.value && 'text-muted-foreground',
-															)}>
-															{field.value ? (
-																format(field.value, 'dd-MM-yyyy')
-															) : (
-																<span>Pick a date</span>
-															)}
-															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														selected={field.value}
-														onSelect={field.onChange}
-														// disabled={(date) =>
-														//   date > new Date() || date < new Date("1970-01-01")
-														// }
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
+											<DatePicker
+												placeholder="Joined Date"
+												onChange={(date) => {
+													const newDate = date ? new Date(date) : undefined;
+													field.onChange(newDate);
+													setJoinedDate(newDate);
+												}}
+												value={field.value}
+												startYear={1980}
+												endYear={2030}
+												displayFormat="dd-MM-yyyy"
+											/>
 											<FormMessage />
 										</FormItem>
 									)}
@@ -410,39 +479,16 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 									render={({ field }) => (
 										<FormItem className="flex flex-col p-2">
 											<FormLabel>Date of birth</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant={'outline'}
-															className={cn(
-																'pl-3 text-left font-normal w-full',
-																!field.value && 'text-muted-foreground',
-															)}>
-															{field.value ? (
-																format(field.value, 'dd-MM-yyyy')
-															) : (
-																<span>Pick a date</span>
-															)}
-															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														selected={field.value}
-														onSelect={field.onChange}
-														// disabled={(date) =>
-														//   date > new Date() || date < new Date("1970-01-01")
-														// }
-														fromYear={1960}
-														toYear={2050}
-														captionLayout="dropdown-buttons"
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
+											<DatePicker
+												placeholder="Date of birth"
+												onChange={field.onChange}
+												value={field.value}
+												startYear={1980}
+												endYear={2030}
+												displayFormat="dd-MM-yyyy"
+												defaultPopupValue={dob}
+											/>
+
 											<FormMessage />
 										</FormItem>
 									)}
@@ -453,19 +499,55 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 									name="roles"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Roles</FormLabel>
-											<MultiSelect
+											<FormLabel>Role</FormLabel>
+											<MultipleSelector
+												selectFirstItem={false}
+												// defaultOptions={roles}
+												hidePlaceholderWhenSelected
+												value={selectedRole}
+												onChange={(value) => {
+													setSelectedRole(value);
+													field.onChange(value);
+												}}
+												maxSelected={100}
 												options={roles.map((role) => ({
-													label: role.name,
 													value: role.id.toString(),
+													label: role.name,
 												}))}
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-												placeholder="Select Roles"
-												variant="inverted"
-												animation={0}
-												maxCount={3}
+												placeholder="Filter by role"
+												emptyIndicator={
+													<p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+														no results found.
+													</p>
+												}
 											/>
+
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="gender"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Gender</FormLabel>
+											<FormControl>
+												<Combobox
+													options={[
+														{ label: 'Male', value: 'male' },
+														{ label: 'Female', value: 'female' },
+													]}
+													placeholder="Select Gender"
+													selected={gender}
+													onChange={(value: ComboboxOptions) => {
+														setGender(value.value);
+														field.onChange(value.value);
+													}}
+													showCreate={false}
+												/>
+											</FormControl>
 											<FormMessage />
 										</FormItem>
 									)}
@@ -535,20 +617,6 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 											</p>
 										</li>
 									))}
-									{item.photo && files.length === 0 && (
-										<li className="relative h-32 rounded-md shadow-lg dark:shadow-white">
-											<Image
-												src={item.photo}
-												alt="Current profile photo"
-												width={100}
-												height={100}
-												className="h-full w-full object-contain rounded-md dark:object-cover"
-											/>
-											<p className="mt-2 text-neutral-500 text-[12px] font-medium dark:text-white">
-												Current photo
-											</p>
-										</li>
-									)}
 								</ul>
 
 								{/* Rejected Files */}
@@ -578,6 +646,12 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 											</button>
 										</li>
 									))}
+
+									{item.photo && (
+										<li>
+											<Image src={item.photo} alt="Admin Photo" width={100} height={100} />
+										</li>
+									)}
 								</ul>
 							</section>
 						</CardContent>
@@ -603,7 +677,7 @@ export const UpdateAdminForm = ({ item }: PropData) => {
 
 						<CardFooter className="flex justify-evenly">
 							<Button disabled={loading} className="bg-black dark:bg-white" type="submit">
-								Update
+								Save
 							</Button>
 						</CardFooter>
 					</Card>
